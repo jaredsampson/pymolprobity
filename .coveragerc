@@ -1,0 +1,5 @@
+[run]
+source = ./pymolprobity
+include = ./*
+
+# vim: ft=config:
