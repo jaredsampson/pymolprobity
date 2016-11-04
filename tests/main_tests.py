@@ -57,27 +57,29 @@ class GetObjectTests(unittest.TestCase):
             mp.get_object(1)
 
 
+@mock.patch('pymolprobity.main.MPObject')
+@mock.patch('pymolprobity.main.get_object')
 class GetOrCreateObjectTests(unittest.TestCase):
     def setUp(self):
-        self.obj = mp.MPObject('test')
-        mp.objects['test'] = self.obj
+        # should probably mock out main.objects dict instead
+        mp.objects['test'] = mp.MPObject('test')
 
     def tearDown(self):
-        del(self.obj)
         mp.objects.clear()
 
-    def test_get_existing_object(self):
-        o = mp.get_or_create_object('test')
-        assert o == self.obj
+    def test_get_existing_object(self, mock_get, mock_MPObj):
+        res = mp.get_or_create_object('test')
+        ref = mock_get.return_value
+        self.assertEqual(res, ref)
+        mock_MPObj.assert_not_called()
 
-    def test_create_nonexisting_object(self):
-        o = mp.get_or_create_object('blah')
-        assert 'blah' in mp.objects.keys()
-        assert type(mp.objects['blah']) is mp.MPObject
-        assert o == mp.objects['blah']
-        assert o.name == 'blah'
+    def test_with_nonexisting_object(self, mock_get, mock_MPObj):
+        res = mp.get_or_create_object('blah')
+        ref = mock_get.return_value
+        self.assertEqual(res, ref)
+        mock_get.assert_called_once_with('blah')
 
-    def test_non_string_input(self):
+    def test_non_string_input(self, mock_get, mock_MPObj):
         with self.assertRaises(TypeError):
             mp.get_or_create_object(2)
 

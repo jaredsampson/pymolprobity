@@ -372,14 +372,17 @@ def get_or_create_object(obj):
 
     '''
     # Check input
-    msg = "get_or_create_object: `obj` must be a string"
-    if not type(obj) is str: raise TypeError, msg
+    if not type(obj) is str:
+        msg = "get_or_create_object: `obj` must be a string"
+        raise TypeError(msg)
 
     # Get the object...
-    try:
+    if obj in objects.keys():
+        logger.debug('Using existing MPObject: {}'.format(obj))
         return get_object(obj)
     # Or create it
-    except KeyError:
+    else:
+        logger.debug('Creating MPObject: {}'.format(obj))
         objects[obj] = MPObject(obj)
         return get_object(obj)
 
