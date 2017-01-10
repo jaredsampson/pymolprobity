@@ -253,11 +253,11 @@ class MPObject(object):
         for name in cmd.get_names(enabled_only=1):
             logger.debug('  checking {} for reduce group match'.format(name))
             if reduce_group_regex.match(name) or name == self.pdb['reduce']:
-                print('  match! {}')
+                logger.debug('  match! {}')
                 reduce_is_enabled = 1
                 continue
         if reduce_is_enabled:
-            print('reduce was enabled, switching to flips.')
+            logger.debug('reduce was enabled, switching to flips.')
             self.disable_pdb('reduce')
             # Enable the flipkin 'flip' groups
             self.solo_flipkin_group('flip')
