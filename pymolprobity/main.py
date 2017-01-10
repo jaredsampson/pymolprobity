@@ -399,13 +399,20 @@ def run_command(args, input_str=None):
     """Run a command with the given arguments and optional piped STDIN input
     string, and return STDOUT as a string.
     """
-    if input_str is None:
-        process = subprocess.Popen(args, stdout=subprocess.PIPE)
-        output = process.communicate()[0]
-    else:
-        assert type(input_str) is str
-        process = subprocess.Popen(args,stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        output = process.communicate(input_str)[0]
+    try:
+        if input_str is None:
+            process = subprocess.Popen(args, stdout=subprocess.PIPE)
+            output = process.communicate()[0]
+        else:
+            assert type(input_str) is str
+            process = subprocess.Popen(args, stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE)
+            output = process.communicate(input_str)[0]
+    except OSError:
+        msg = ("Unable to run the following command:\n\t`{}`\nPlease make "
+               "sure {} is installed and can be found on the shell PATH.")
+        logger.error(msg.format(" ".join(args), args[0]))
+        return None
 
     logger.debug("===== BEGIN OUTPUT =====\n%s", output)
     logger.debug("===== END OUTPUT =====")
@@ -556,6 +563,13 @@ def reduce_object(obj, flip=1):
     # Run reduce with specified flips
     pdbstr = cmd.get_pdbstr(obj)
     reduced_pdbstr = generate_reduce_output(pdbstr, flip_type=flip)
+
+    # Fail gracefully if no output is generated.
+    if not reduced_pdbstr:
+        msg = "Failed to generate Reduce output for {}.".format(obj)
+        logger.error(msg)
+        return
+
     withflips = " with flips" if flip else ""
     logger.info("Generated Reduce output{} for '{}'.".format(withflips, obj))
 
@@ -716,7 +730,16 @@ def flipkin_object(obj):
 
     # Run flipkin to get NQ and H flip kinemages
     flipkinNQ_raw = generate_flipkin_output(tf)
+    if not flipkinNQ_raw:
+        msg = 'Failed to generate Flipkin NQ output for {}.'.format(obj)
+        logger.error(msg)
+        return
+
     flipkinH_raw = generate_flipkin_output(tf, his=True)
+    if not flipkinH_raw:
+        msg = 'Failed to generate Flipkin H output for {}.'.format(obj)
+        logger.error(msg)
+        return
 
     # Cleanup
     os.unlink(tf)
@@ -815,6 +838,13 @@ def probe_object(obj):
 
     pdbstr = o.get_pdbstr('probe')
     output = generate_probe_output(pdbstr)
+
+    # Fail gracefully if probe call returns no output.
+    if not output:
+        msg = 'Failed to generate Probe output for {}.'.format(obj)
+        logger.error(msg)
+        return
+
     logger.info("Generated Probe output for '{}'.".format(obj))
 
     # Store list of dots and vectors

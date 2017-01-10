@@ -99,6 +99,11 @@ class RunCommandTests(unittest.TestCase):
         mp.run_command(['false'])
         self.assertTrue(mock_logger.warning.called)
 
+    @mock.patch('pymolprobity.main.logger')
+    def test_with_missing_executable(self, mock_logger):
+        mp.run_command(['not_a_command'])
+        self.assertTrue(mock_logger.error.called)
+
 
 @mock.patch('pymolprobity.main.cmd.save')
 @mock.patch('pymolprobity.main.tempfile')
@@ -486,11 +491,13 @@ class GenerateReduceResultTests(unittest.TestCase):
         mock_run.assert_called_once_with(['args'], 'pdbstr')
 
 
+@mock.patch('pymolprobity.main.logger')
 @mock.patch('pymolprobity.main.process_reduce_output')
 @mock.patch('pymolprobity.main.generate_reduce_output')
 @mock.patch('pymolprobity.main.cmd')
 class ReduceObjectTests(unittest.TestCase):
-    def test_default_with_flips(self, mock_cmd, mock_gen, mock_proc):
+    def test_default_with_flips(self, mock_cmd, mock_gen, mock_proc,
+            mock_logger):
         mock_cmd.get_pdbstr.return_value = 'pdbstr'
         mock_gen.return_value = 'reduced_pdbstr'
         mock_proc.return_value = ['flip1', 'flip2']
@@ -499,11 +506,18 @@ class ReduceObjectTests(unittest.TestCase):
         mock_gen.assert_called_once_with('pdbstr', flip_type=1)
         mock_proc.assert_called_once_with('reduced_pdbstr')
 
-    def test_without_flips(self, mock_cmd, mock_gen, mock_proc):
+    def test_without_flips(self, mock_cmd, mock_gen, mock_proc, mock_logger):
         mock_cmd.get_pdbstr.return_value = 'pdbstr'
         mp.reduce_object('obj', flip=0)
         mock_cmd.get_pdbstr.assert_called_once_with('obj')
         mock_gen.assert_called_once_with('pdbstr', flip_type=0)
+
+    def test_no_reduce_output(self, mock_cmd, mock_gen, mock_proc,
+            mock_logger):
+        mock_gen.return_value = None
+        mp.reduce_object('obj')
+        self.assertTrue(mock_logger.error.called)
+        self.assertFalse(mock_proc.called)
 
 
 @mock.patch('pymolprobity.flips.parse_flips')
@@ -540,15 +554,15 @@ class ProcessReduceOutputTests(unittest.TestCase):
 #
 ###############################################################################
 
+@mock.patch('pymolprobity.main.logger')
+@mock.patch('pymolprobity.main.os.unlink')
+@mock.patch('pymolprobity.main.process_flipkin_output')
+@mock.patch('pymolprobity.main.generate_flipkin_output')
+@mock.patch('pymolprobity.main.save_to_tempfile')
+@mock.patch('pymolprobity.main.get_object')
 class FlipkinObjectTests(unittest.TestCase):
-    # @mock.patch('pymolprobity.main.apply_flipkin_to_mpobject')
-    @mock.patch('pymolprobity.main.os.unlink')
-    @mock.patch('pymolprobity.main.process_flipkin_output')
-    @mock.patch('pymolprobity.main.generate_flipkin_output')
-    @mock.patch('pymolprobity.main.save_to_tempfile')
-    @mock.patch('pymolprobity.main.get_object')
     def test_workflow_for_nq_defaults(self, mock_get_obj, mock_tf, mock_gen,
-            mock_proc, mock_unlink):  #, mock_apply):
+            mock_proc, mock_unlink, mock_logger):  #, mock_apply):
         o = mock_get_obj.return_value
         o.reduce_output = 'pdbstr'
         mock_tf.return_value = 'tempfile.pdb'
@@ -569,6 +583,22 @@ class FlipkinObjectTests(unittest.TestCase):
         # mock_apply.assert_has_calls(
         #         [mock.call(o, 'proc_nq'),
         #          mock.call(o, 'proc_h')])
+
+    def test_no_flipkinNQ_output(self, mock_get_obj, mock_tf, mock_gen,
+            mock_proc, mock_unlink, mock_logger):
+        mock_gen.side_effect = (None, 'flipkin_h')
+        mp.flipkin_object('test')
+        self.assertTrue(mock_logger.error.called)
+        self.assertFalse(mock_proc.called)
+
+    def test_no_flipkinH_output(self, mock_get_obj, mock_tf, mock_gen,
+            mock_proc, mock_unlink, mock_logger):
+        mock_gen.side_effect = ('flipkin_nq', None)
+        mp.flipkin_object('test')
+        self.assertTrue(mock_logger.error.called)
+        self.assertFalse(mock_proc.called)
+
+
 
 
 @mock.patch('pymolprobity.main.run_command')
@@ -694,13 +724,14 @@ class GenerateProbeOutputTests(unittest.TestCase):
         mock_os.path.isfile.assert_has_calls([call, call])
 
 
+@mock.patch('pymolprobity.main.logger')
 @mock.patch('pymolprobity.main.cmd')
 @mock.patch('pymolprobity.main.process_probe_output')
 @mock.patch('pymolprobity.main.generate_probe_output')
 @mock.patch('pymolprobity.main.get_object')
 class ProbeObjectTests(unittest.TestCase):
     def test_workflow(self, mock_get_obj, mock_gen, mock_proc,
-            mock_cmd):
+            mock_cmd, mock_logger):
         obj = 'obj'
         o = mock_get_obj.return_value
         # o.pdb['userflips'] == 'userflips_obj'
@@ -714,6 +745,16 @@ class ProbeObjectTests(unittest.TestCase):
         mock_get_obj.assert_called_once_with(obj)
         mock_gen.assert_called_once_with('pdbstr')
         self.assertTrue(o.draw.called)
+
+    def test_no_probe_output(self, mock_get_obj, mock_gen, mock_proc,
+            mock_cmd, mock_logger):
+        '''Fail gracefully if `probe` call returns no output.'''
+        mock_gen.return_value = None
+        mp.probe_object('obj')
+        self.assertTrue(mock_logger.error.called)
+        self.assertFalse(mock_proc.called)
+
+
 
 
 class ProcessProbeOutputTests(unittest.TestCase):
