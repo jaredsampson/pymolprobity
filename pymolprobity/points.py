@@ -77,6 +77,84 @@ def _cgo_cylinder(pos0, pos1, radius, rgb0, rgb1):
 
 
 
+##############################################################################
+#
+#  ATOM INFO STRINGS
+#
+###############################################################################
+
+# KEY: N=name, A=alt, R=resn, I=resi, X=ins code, C=chain, O=occ, b=Bfac
+
+# Simple dotlist atom: 15-char total, with 2-char chain ID
+# e.g. "NNNNARRRIIIIXCC"
+BASIC_ATOM_RE = re.compile(
+        r"^([\w\? ]{4})"    # group 1: atom name (e.g. " CA ")
+        r"([\w ])"          # group 2: alternate conformation ID (e.g. "A")
+        r"([\w]{3})"        # group 3: residue name (e.g. "ARG")
+        r"([\d ]{4}[\w ])"  # group 4: residue number + insertion code
+        r"([\w ]{1,4})"     # group 5: chain ID (1-, 2-, or 4-char)
+        )
+
+def process_basic_atom_string(atom_str):
+    m = BASIC_ATOM_RE.match(atom_str)
+    if m:
+        name, alt, resn, resi, chain = [g.strip().upper() for g in m.groups()]
+        # Assemble into dict
+        atom_dict = {
+                'chain': chain,
+                'resn': resn,
+                'resi': resi,
+                'name': name,
+                'alt': alt,
+                }
+        return atom_dict
+    else:
+        return None
+
+
+# Bonds vectorlist with occupancy (optional), B-factor, and input file name
+# e.g. "NNNNARRRCCIIIIX OOOOBbbbbbb filename"
+BONDS_VECTORLIST_ATOM_RE = re.compile(
+        r"^([\w\? ]{4})"    # group 1: atom name (e.g. " CA ")
+        r"([\w ])"          # group 2: alternate conformation ID (e.g. "A")
+        r"([\w]{3})"        # group 3: residue name (e.g. "ARG")
+        r"([\w ]{2})"       # group 4: chain ID
+        r"([\d ]{4}[\w ]) " # group 5: residue number + ins code
+        r"([\d\.]{4}|) ?"   # group 6: 4-char occupancy (optional) + space?
+        r"B([\d\.]{4,6}) "  # group 7: 4- to 6-char B-factor + space
+        r".+$"              # input file name
+        )
+
+def process_bonds_vectorlist_atom(atom_str):
+    m = BONDS_VECTORLIST_ATOM_RE.match(atom_str)
+    if m:
+        (name, alt, resn, chain,
+                resi, occ, b) = [g.strip().upper() for g in m.groups()]
+        # Convert occupancy and B-factor to floats
+        if not occ:
+            occ = 1.00
+        else:
+            occ = float(occ)
+        if not b:
+            b = 0.00
+        else:
+            b = float(b)
+        # Assemble into dict
+        atom_dict = {
+                'chain': chain,
+                'resn': resn,
+                'resi': resi,
+                'name': name,
+                'alt': alt,
+                'occ': occ,
+                'b': b,
+                }
+        return atom_dict
+    else:
+        return None
+
+
+
 ###############################################################################
 #
 #  DOTS
@@ -143,18 +221,20 @@ class Dot(object):
 #             #print self.atom_selection, self.atom_id
 
 
+DOTLIST_HEADER_RE = re.compile(
+        r"dotlist "         # dotlist keyword + space
+        r"{([^}]*)} "       # atom info section + space
+        r"color=([^\s]*) "  # color
+        r"master={([^}]*)}" # master
+        )
+
 def _parse_dotlist_header(line):
     """Parse the header line of a kinemage `@dotlist` keyword.
 
     Header lines are in the following format:
 
         dotlist {x} color=white master={vdw contact}
-        dotlist {x} color=white master={vdw contact}
         dotlist {x} color=sky master={vdw contact}
-        dotlist {x} color=sky master={vdw contact}
-        dotlist {x} color=sky master={H-bonds}
-        dotlist {x} color=red master={vdw contact}
-        dotlist {x} color=red master={vdw contact}
         dotlist {x} color=red master={H-bonds}
 
     Where "x" is an arbitrary name for the dotlist (currently hard-coded as "x"
@@ -162,12 +242,18 @@ def _parse_dotlist_header(line):
     master is the type of interaction depicted by the dots.
 
     """
-    r = re.compile(r"dotlist {([^}]*)} color=([^\s]*) master={([^}]*)}")
-    m = r.match(line)
+    m = DOTLIST_HEADER_RE.match(line)
 
     # name, color, master
     return  m.group(1), m.group(2), utils.slugify(m.group(3))
 
+
+DOTLIST_BODY_RE = re.compile(
+            r"{([^}]*)}"        # atom info string
+            r"(\w*)\s*"         # color + optional space(s)
+            r"'(\w)' "          # pointmaster
+            r"([0-9.,\-]*)"     # coordinates
+            )
 
 def _parse_dotlist_body(lines):
     """Parse the non-header lines of a kinemage `@dotlist` keyword.
@@ -201,21 +287,12 @@ def _parse_dotlist_body(lines):
     ** Also, 'H?' for water hydrogens is problematic and simply stripped away.
 
     """
-
-    # Probe v2.16 (20-May-13) format
-    r = re.compile(
-            r"{([^}]*)}"
-            r"(\w*)\s*"
-            r"'(\w)' "
-            r"([0-9.,\-]*)"
-            )
-
     active_atom = None
     dots = []
 
     # Parse lines to generate Dots
     for i, l in enumerate(lines):
-        m = r.match(l)
+        m = DOTLIST_BODY_RE.match(l)
 
         # Atom selection in kinemages is only written explicitly the first
         # time for a given set of dots. Afterward, it inherits from the
@@ -353,13 +430,18 @@ class Vector(object):
 
     def macro(self, i):
         a = copy.copy(self.atom[i])
+        if a is None:
+            return None
         if a['alt']:
-            a['alt'] = ' and alt {}'.format(a['alt'])
+            a['alt'] = '`{}'.format(a['alt'])
+        else:
+            a['alt'] = ''
         return '{chain}/{resn}`{resi}/{name}{alt}'.format(**a)
 
     def sel(self, i):
         a = copy.copy(self.atom[i])
-
+        if a is None:
+            return None
         c = 'chain {chain} and '.format(**a) if a['chain'] else ''
         i = 'resi {resi} and '.format(**a) if a['resi'] else ''
         n = 'name {name} and '.format(**a) if a['name'] else ''
@@ -489,26 +571,14 @@ def _parse_clash_vectorlist_body(lines):
             # Atom selection in kinemages is only written explicitly the first
             # time for a given list of points. Afterward, it inherits from the
             # previous point via a single double-quote character (").
-            if m.group(ATOM) == '"':
+            atom_sel = m.group(ATOM)
+            if atom_sel == '"':
                 #logger.debug('using active atom...')
                 atom = active_atom
             else:
-                # e.g.: " O   HOH 450  A"
-                atom_sel = m.group(ATOM)
-                # TODO: Check this formatting in probe documentation
-                name = atom_sel[0:4].strip().replace('?','')
-                alt = atom_sel[4:5].strip().upper()
-                resn = atom_sel[5:8].strip().upper()
-                resi = atom_sel[8:13].strip().upper()
-                chain = atom_sel[13:15].strip().upper()
-
-                logger.debug('Generating atom for vector %i point...' % i)
                 # TODO don't create duplicate atoms (track in MPObject)
-                atom = {'name': name,
-                        'alt': alt,
-                        'resn': resn,
-                        'resi': resi,
-                        'chain': chain}
+                logger.debug('Generating atom for vector %i point...' % i)
+                atom = process_basic_atom_string(atom_sel)
                 logger.debug('Finished generating atom for vector %i point.' % i)
 
                 active_atom = atom
@@ -539,6 +609,7 @@ VECTORLIST_BONDS_RE = re.compile(
         r"(?:(\w+) )*"      # group 4: other non-quoted word, e.g. 'ghost' (optional)
         r"([\d,\.\- ]+)"    # group 5: coordinates as a single string
         )
+
 def _parse_bonds_vectorlist_body(lines):
     '''Parse vectorlist lines that describe bonds.'''
     # TODO: merge this with _parse_clashes_vectorlist_body()
@@ -581,42 +652,21 @@ def _parse_bonds_vectorlist_body(lines):
             # # Atom selection in kinemages is only written explicitly the first
             # # time for a given set of dots. Afterward, it inherits from the
             # # previous line via a single double-quote character (").
-            # if m.group(ATOM) == '"':
-            #     logger.debug('using active atom...')
-            #     atom = active_atom
-            # else:
             atom_sel = m.group(ATOM)
-            name = atom_sel[0:4].strip().replace('?','')
-            alt = atom_sel[4:5].strip().upper()
-            resn = atom_sel[5:8].strip().upper()
-            chain = atom_sel[8:10].strip().upper()
-            resi = atom_sel[10:15].strip().upper()
-            if len(atom_sel) > 15:
-                if atom_sel[16] == 'B':
-                    # no occupancy value given, assume 1.00
-                    occ = 1.0
-                    b = float(atom_sel[15:22].replace('B', ''))
-                else:
-                    # partial occupancy (0 <= occ < 1)
-                    try:
-                        occ = float(atom_sel[15:20])
-                        b = float(atom_sel[20:27].replace('B', ''))
-                    except IndexError:
-                        print atom_sel
-                        raise
+            if atom_sel == '"':
+                logger.debug('using active atom...')
+                atom = active_atom
             else:
-                occ = None
-                b = None
+                try:
+                    # TODO don't create duplicate atoms (track in MPObject)
+                    msg = 'Generating atom for vector {} point {}...'.format(i, j)
+                    logger.debug(msg)
 
-            logger.debug('Generating atom for vector %i point %i...' % (i, j))
-            # TODO don't create duplicate atoms (track in MPObject)
-            atom = {'name': name,
-                    'alt': alt,
-                    'resn': resn,
-                    'resi': resi,
-                    'chain': chain,
-                    'occ': occ,
-                    'b': b}
+                    atom = process_bonds_vectorlist_atom(atom_sel)
+                except:
+                    msg = 'Atom info string `{}` could not be parsed. Skipping.'
+                    logger.error(msg.format(atom_sel))
+
             logger.debug('Finished generating atom for vector %i point %i.' % (i, j))
 
             # active_atom = atom

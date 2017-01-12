@@ -651,13 +651,20 @@ def create_object_with_flipkin_coords(mpobj, which_flips='NQ'):
 
         logger.debug('begin flipping vectorlist')
         for v in vl:
+            if not (v.atom[0] and v.atom[1]):
+                msg = 'vector {} was missing atoms: {}'.format(v, v.atom)
+                logger.warning(msg)
+                continue
             macro = v.macro(1)
             sel = v.sel(1)
+            logger.debug('atom to be flipped: {}\n  sel: {}'.format(macro, sel))
             source_coords = v.coords[1]
 
             target_sel = '{} and {}'.format(flipped_obj, sel)
             msg = 'flipping atom {} to {}'.format(target_sel, source_coords)
             logger.debug(msg)
+
+
             ret = cmd.load_coords([source_coords], target_sel)
             if ret == -1:
                 success = 0
@@ -665,17 +672,17 @@ def create_object_with_flipkin_coords(mpobj, which_flips='NQ'):
 
                 if a['resn'] == 'HIS':
                     his_h = {
-                            'hd1': {
-                                'old_h': 'he2',
-                                'old_n': 'ne2',
-                                'new_h': 'hd1',
-                                'new_n': 'nd1',
+                            'HD1': {
+                                'old_h': 'HE2',
+                                'old_n': 'NE2',
+                                'new_h': 'HD1',
+                                'new_n': 'ND1',
                                 },
-                            'he2': {
-                                'old_h': 'hd1',
-                                'old_n': 'nd1',
-                                'new_h': 'he2',
-                                'new_n': 'ne2',
+                            'HE2': {
+                                'old_h': 'HD1',
+                                'old_n': 'ND1',
+                                'new_h': 'HE2',
+                                'new_n': 'NE2',
                                 }
                             }
                     if a['name'] in his_h.keys():

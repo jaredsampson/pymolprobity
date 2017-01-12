@@ -95,6 +95,41 @@ class CgoCylinderTests(unittest.TestCase):
 
 ###############################################################################
 #
+#  ATOM INFO STRINGS
+#
+###############################################################################
+
+class ProcessBasicAtomStringTests(unittest.TestCase):
+    def test_all(self):
+        inputs = [
+                {'inp': " CA BSER 126  A",
+                 'ref': {'chain': 'A', 'resn': 'SER', 'resi': '126', 'name': 'CA', 'alt': 'B'}},
+                {'inp': "HD13 LEU  30A A",
+                 'ref': {'chain': 'A', 'resn': 'LEU', 'resi': '30A', 'name': 'HD13', 'alt': ''}},
+                ]
+        for i in inputs:
+            res = pt.process_basic_atom_string(i['inp'])
+            self.assertEqual(res, i['ref'])
+
+
+class ProcessBondsVectorlistAtomTests(unittest.TestCase):
+    def test_matches(self):
+        inputs = [
+                {'inp': ' og aser A 120  0.73B9.22 tmpcA2P6n',
+                 'ref': {'chain': 'A', 'resn': 'SER', 'resi': '120', 'name': 'OG', 'alt': 'A', 'occ': 0.73, 'b': 9.22}},
+                {'inp': ' ne2agln A1104  0.59B23.79 1cexFH',
+                 'ref': {'chain': 'A', 'resn': 'GLN', 'resi': '1104', 'name': 'NE2', 'alt': 'A', 'occ': 0.59, 'b': 23.79}},
+                {'inp': ' nd2 asn A 106B B24.83 1cexFH',
+                 'ref': {'chain': 'A', 'resn': 'ASN', 'resi': '106B', 'name': 'ND2', 'alt': '', 'occ': 1.00, 'b': 24.83}},
+                ]
+        for i in inputs:
+            res = pt.process_bonds_vectorlist_atom(i['inp'])
+            self.assertEqual(res, i['ref'])
+
+
+
+###############################################################################
+#
 #  DOTLISTS
 #
 ###############################################################################
@@ -126,6 +161,18 @@ class ProcessDotlistTests(unittest.TestCase):
             self.assertEqual(dot.subgroup, self.base_context['subgroup'])
             self.assertEqual(dot.animate, self.base_context['animate'])
 
+
+class DotlistBodyReTests(unittest.TestCase):
+    def setUp(self):
+        self.re = pt.DOTLIST_BODY_RE
+
+    def test_matches(self):
+        inputs = [
+                '''{ CA  SER  26  A}blue  'O' 61.716,59.833,8.961''',  # typical
+                '''{ H?  HOH 293  A}greentint  'O' 57.884,59.181,7.525''', # H?
+                ]
+        for i in inputs:
+            self.assertRegexpMatches(i, self.re)
 
 
 class ParseDotlistHeaderTests(unittest.TestCase):
@@ -261,126 +308,61 @@ class ParseVectorlistHeaderTests(unittest.TestCase):
         self.assertEqual(res, ref)
 
 
+@mock.patch('pymolprobity.points.process_basic_atom_string')
 @mock.patch('pymolprobity.points.colors.get_pymol_color')
 class ParseClashVectorlistBodyTests(unittest.TestCase):
-    def test_clash_general_form(self, mock_get_color):
+    def test_clash_general_form(self, mock_get_color, mock_proc_atom):
         mock_get_color.return_value = 'somecolor'
-        inp = ['''{AAAABCCCDDDDEFF}somecolor P  'O' 0.0,1.0,2.0 {"}somecolor   'O' 3.0,4.0,5.0''']
-        ref_atom = {'name': 'AAAA',
-                'alt': 'B',
-                'resn': 'CCC',
-                'resi': 'DDDDE',
-                'chain': 'FF'}
+        mock_proc_atom.side_effect = ['atom1', 'atom2']
+        inp = ['''{atom1}somecolor P  'O' 0.0,1.0,2.0 {"}somecolor   'O' 3.0,4.0,5.0''']
         res = pt._parse_clash_vectorlist_body(inp)
-        self.assertEqual(res[0].atom, [ref_atom, ref_atom])
+        mock_proc_atom.assert_called_once_with('atom1')
+        self.assertEqual(res[0].atom, ['atom1', 'atom1'])
         self.assertEqual(res[0].color, ['somecolor', 'somecolor'])
         self.assertEqual(res[0].pm, ['O', 'O'])
         self.assertEqual(res[0].coords, [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]] )
 
-
-    def test_with_spaces_in_atom_desc(self, mock_get_color):
-        mock_get_color.return_value = 'colorname'
-        inp = ['''{ CA  SER  26  A}somecolor P  'O' 0.0,1.0,2.0 {"}somecolor   'O' 3.0,4.0,5.0''']
-        ref_atom = {'name': 'CA',
-                'alt': '',
-                'resn': 'SER',
-                'resi': '26',
-                'chain': 'A'}
-        res = pt._parse_clash_vectorlist_body(inp)
-        self.assertEqual(res[0].atom, [ref_atom, ref_atom])
-
-    def test_with_question_mark_in_atom_desc(self, mock_get_color):
-        '''Should handle ? in atom name e.g. "H?" for water hydrogen.'''
-        mock_get_color.return_value = 'colorname'
-        inp = ['''{ H?  HOH 293  A}somecolor P  'O' 0.0,1.0,2.0 {"}somecolor   'O' 3.0,4.0,5.0''']
-        ref_atom = {'name': 'H',
-                'alt': '',
-                'resn': 'HOH',
-                'resi': '293',
-                'chain': 'A'}
-        res = pt._parse_clash_vectorlist_body(inp)
-        self.assertEqual(res[0].atom, [ref_atom, ref_atom])
-
-    def test_with_negative_coords(self, mock_get_color):
+    def test_with_negative_coords(self, mock_get_color, mock_proc):
         '''Handle negative coordinates.'''
-        mock_get_color.return_value = 'colorname'
-        inp = ['''{AAAABCCCDDDDEFF}somecolor P  'O' -0.0,-1.0,-2.0 {"}somecolor   'O' -3.0,-4.0,-5.0''']
+        mock_proc.side_effect = ['crina', None]
+        inp = ['''{atomstr}somecolor P  'O' -0.0,-1.0,-2.0 {"}somecolor   'O' -3.0,-4.0,-5.0''']
         res = pt._parse_clash_vectorlist_body(inp)
         self.assertEqual(res[0].coords, [[-0.0, -1.0, -2.0], [-3.0, -4.0, -5.0]])
 
 
+@mock.patch('pymolprobity.points.process_bonds_vectorlist_atom')
 class ParseBondsVectorlistBody(unittest.TestCase):
-    def test_bond_vector_general_form(self):
-        inp = ['''{AAAABCCCFFDDDDE B12.34 objFH} P 'O' 0.0,1.0,2.0 {GGGGHIIILLJJJJK B56.78 objFH} P 'O' 3.0,4.0,5.0''']
-        ref_atom1 = {'name': 'AAAA',
-                'alt': 'B',
-                'resn': 'CCC',
-                'resi': 'DDDDE',
-                'chain': 'FF',
-                'occ': 1.0,
-                'b': 12.34}
-        ref_atom2 = {'name': 'GGGG',
-                'alt': 'H',
-                'resn': 'III',
-                'resi': 'JJJJK',
-                'chain': 'LL',
-                'occ': 1.0,
-                'b': 56.78}
+    def test_bond_vector_general_form(self, mock_proc_atom):
+        mock_proc_atom.side_effect = ['atom1', 'atom2']
+        inp = ['''{atom1} P 'O' 0.0,1.0,2.0 {atom2} P 'O' 3.0,4.0,5.0''']
         res = pt._parse_bonds_vectorlist_body(inp)
-        self.assertEqual(res[0].atom, [ref_atom1, ref_atom2])
+        mock_proc_atom.assert_has_calls([mock.call('atom1'), mock.call('atom2')])
+        self.assertEqual(res[0].atom, ['atom1', 'atom2'])
         self.assertEqual(res[0].color, [None, None])
         self.assertEqual(res[0].pm, ['O', 'O'])
         self.assertEqual(res[0].coords, [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]] )
 
-    def test_with_continuous_bonds_carryover_second_atom(self):
-        inp = ['''{AAAABCCCFFDDDDE B12.34 objFH} P 'O' 0.0,1.0,2.0 {GGGGHIIILLJJJJK B56.78 objFH} P 'O' 3.0,4.0,5.0''',
-               '''{MMMMNOOORRPPPPQ B9.10 objFH} P 'O' 0.0,1.0,2.0 ''']
+    def test_with_continuous_bonds_carryover_second_atom(self, mock_proc_atom):
+        inp = ['''{atom1} P 'O' 0.0,1.0,2.0 {atom2} P 'O' 3.0,4.0,5.0''',
+               '''{atom3} P 'O' 0.0,1.0,2.0 ''']
+        mock_proc_atom.side_effect = ['atom1', 'atom2', 'atom3']
         res = pt._parse_bonds_vectorlist_body(inp)
-        ref_atom1 = {'name': 'AAAA',
-                'alt': 'B',
-                'resn': 'CCC',
-                'resi': 'DDDDE',
-                'chain': 'FF',
-                'occ': 1.0,
-                'b': 12.34 }
-        ref_atom2 = {'name': 'GGGG',
-                'alt': 'H',
-                'resn': 'III',
-                'resi': 'JJJJK',
-                'chain': 'LL',
-                'occ': 1.0,
-                'b': 56.78 }
-        ref_atom3 = {'name': 'MMMM',
-                'alt': 'N',
-                'resn': 'OOO',
-                'resi': 'PPPPQ',
-                'chain': 'RR',
-                'occ': 1.0,
-                'b': 9.10 }
-        print res[1].atom
-        print ref_atom2
-        print ref_atom3
-        self.assertEqual(res[0].atom, [ref_atom1, ref_atom2])
-        self.assertEqual(res[1].atom, [ref_atom2, ref_atom3])
+        self.assertEqual(res[0].atom, ['atom1', 'atom2'])
+        self.assertEqual(res[1].atom, ['atom2', 'atom3'])
 
-    def test_with_partial_occupancy(self):
-        inp = ['''{AAAABCCCFFDDDDE 0.50 B12.34 objFH} P 'O' 0.0,1.0,2.0 {GGGGHIIILLJJJJK 0.50 B56.78 objFH} P 'O' 3.0,4.0,5.0''']
-        res = pt._parse_bonds_vectorlist_body(inp)
-        self.assertEqual(res[0].atom[0]['occ'], 0.50)
-        self.assertEqual(res[0].atom[1]['occ'], 0.50)
-
-    def test_raises_indexerror_when_first_line_has_only_one_point(self):
-        inp = ['''{AAAABCCCFFDDDDE 0.50 B12.34 objFH} P 'O' 0.0,1.0,2.0''']
+    def test_raises_indexerror_when_first_line_has_only_one_point(self,
+            mock_proc_atom):
+        inp = ['''{atom1} P 'O' 0.0,1.0,2.0''']
         with self.assertRaises(IndexError):
             pt._parse_bonds_vectorlist_body(inp)
 
-    def test_raises_valueerror_with_zero_matches(self):
+    def test_raises_valueerror_with_zero_matches(self, mock_proc_atom):
         inp = ['''not a match''']
         with self.assertRaises(ValueError):
             pt._parse_bonds_vectorlist_body(inp)
 
-    def test_raises_valueerror_with_more_than_2_matches(self):
-        inp = ['''{AAAABCCCFFDDDDE 0.50 B12.34 objFH} P 'O' 0.0,1.0,2.0 {AAAABCCCFFDDDDE 0.50 B12.34 objFH} P 'O' 0.0,1.0,2.0 {GGGGHIIILLJJJJK 0.50 B56.78 objFH} P 'O' 3.0,4.0,5.0''']
+    def test_raises_valueerror_with_more_than_2_matches(self, mock_proc_atom):
+        inp = ['''{atom1} P 'O' 0.0,1.0,2.0 {atom2} P 'O' 0.0,1.0,2.0 {atom3} P 'O' 3.0,4.0,5.0''']
         with self.assertRaises(ValueError):
             pt._parse_bonds_vectorlist_body(inp)
 
