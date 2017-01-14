@@ -4,17 +4,11 @@ build:
 init:
 	conda env create -f environment.yml || pip install -r requirements.txt
 
-updateenv:
-	conda env export -f environment.yml
-	which -s pip && pip freeze > requirements.txt
-
 test:
-	$(eval export PYTHONPATH=${PYMOL_HOME})
-	nosetests tests
+	export PYTHONPATH=${PYMOL_HOME}; nosetests tests
 
 testcov:
-	$(eval export PYTHONPATH=${PYMOL_HOME})
-	nosetests --with-coverage --cover-erase
+	export PYTHONPATH=${PYMOL_HOME}; nosetests --with-coverage --cover-erase tests
 
 cov:
 	make testcov
@@ -24,10 +18,3 @@ clean:
 	rm pymolprobity/*.pyc
 	rm tests/*.pyc
 
-run:
-ifndef pml
-	echo "No test indicated, just starting PyMOL and importing pymolprobity."
-	pymol pml/test0.pml
-else
-	pymol pml/test${pml}.pml
-endif
