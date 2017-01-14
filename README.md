@@ -88,6 +88,17 @@ Prekin.
   * Flipkin: [PHENIX-compatible version][fkp]
   * Prekin: [Linux (64-bit)][pkl64], [Linux (32-bit)][pkl32], [MacOS][pkm]
 
+  You will need to create either aliases or symlinks to the `phenix.xxx`
+  executables so PyMOLProbity can find them by calling `reduce` and `probe` from
+  the shell.  For example, the following added to `~/.bashrc` should be
+  sufficient in most cases.
+
+  ```
+  alias reduce=phenix.reduce
+  alias probe=phenix.probe
+  ```
+
+
   [PHENIX]: http://www.phenix-online.org/
 
 2. **Without PHENIX.**  If you do not wish to install PHENIX, you'll need to
