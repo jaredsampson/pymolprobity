@@ -1,11 +1,19 @@
 '''GUI for PyMOLProbity plugin.'''
+
+from __future__ import absolute_import
+
 import logging
 import Pmw
-import Tkinter as tk
+import sys
+
+if sys.version_info[0] < 3:
+    import Tkinter as tk
+else:
+    import tkinter as tk
 
 from pymol import cmd
 
-import main
+from . import main
 
 logger = logging.getLogger(__name__)
 
