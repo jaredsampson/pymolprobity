@@ -256,8 +256,9 @@ class PyMOLProbity:
 
             # Stop if there are no available objects.
             if len(obj_list) == 0:
-                w = tk.Label(parent, text='No objects loaded!')
-                w.grid(sticky='ew')
+                txt = 'No objects loaded! Please load a structure and restart the plugin.'
+                w = tk.Label(parent, text=txt, padx=20, pady=20)
+                w.pack()
                 return None
 
             # Create a frame container
@@ -538,6 +539,10 @@ class PyMOLProbity:
 
         # Add the mpobj selection combo box
         input_combo = gen_input_obj_combo(dialog.interior())
+
+        # If no objects are loaded, stop loading the GUI (works for now)
+        if input_combo is None:
+            return
 
         # Add notebook with tabs
         nb = Pmw.NoteBook(dialog.interior(),
