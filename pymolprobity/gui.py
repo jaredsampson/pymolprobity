@@ -523,8 +523,10 @@ class PyMOLProbity:
         #
         #######################################################################
 
+        root = app.root
+
         # The current MPObject name
-        mpobj = tk.StringVar()
+        mpobj = tk.StringVar(root)
 
 
         #######################################################################
@@ -534,7 +536,6 @@ class PyMOLProbity:
         #######################################################################
 
         # Main window
-        root = app.root
         dialog = Pmw.Dialog(root, title="PyMOLProbity", buttons=[])
 
         # Add the mpobj selection combo box
