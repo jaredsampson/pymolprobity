@@ -1,16 +1,16 @@
 '''Kinemage handling for PyMOLProbity plugin.'''
 
+from __future__ import absolute_import
 from __future__ import print_function
 
 import copy
 import logging
 import re
-from string import digits
 
 from pymol import cmd
 
-import points
-import utils
+from . import points
+from . import utils
 
 
 logger = logging.getLogger(__name__)
@@ -318,7 +318,7 @@ def process_kinemage(kinstr):
     for i, command in enumerate(commands):
         lines = command.strip().split("\n")
         keyword = lines[0].split(" ")[0]  # First word after "@"
-        base_keyword = keyword.translate(None, digits)  # remove any digits
+        base_keyword = re.sub(r'\d', '', keyword)  # remove any digits
         if base_keyword in KEYWORD_HANDLERS.keys():
 
             # Process keyword lines with the function set in KEYWORD_HANDLERS

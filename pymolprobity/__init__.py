@@ -34,13 +34,16 @@ REQUIREMENTS
 
 
 '''
+
+from __future__ import absolute_import
+
 __author__ = 'Jared Sampson'
 __version__ = '0.1.2'
 
 
 import logging
 
-import gui
+from . import gui
 
 
 logging.basicConfig(level=logging.INFO)
