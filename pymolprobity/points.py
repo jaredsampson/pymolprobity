@@ -1,5 +1,7 @@
 '''Points (dots, vectors) for PyMOLProbity plugin.'''
 
+from __future__ import absolute_import
+
 import copy
 import logging
 import re
@@ -8,9 +10,9 @@ from chempy import cpv
 #from pymol import cmd
 from pymol import cgo
 
-import colors
+from . import colors
 # from settings import mpgetq
-import utils
+from . import utils
 
 
 logger = logging.getLogger(__name__)

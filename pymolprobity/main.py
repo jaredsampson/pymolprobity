@@ -1,5 +1,6 @@
 '''Main functions for PyMOLProbity plugin.'''
 
+from __future__ import absolute_import
 from __future__ import print_function
 
 import logging
@@ -12,9 +13,9 @@ from pymol import cmd  #cgo, cmd, plugins
 
 # import colors
 # from commands import command_line_output, save_to_tempfile
-import flips
-import kinemage
-import points
+from . import flips
+from . import kinemage
+from . import points
 # import settings
 # import utils
 
@@ -360,7 +361,7 @@ def get_object(obj):
             raise
     else:
         msg = "get_object: `obj` must be either a string or MPObject instance."
-        raise ValueError, msg
+        raise ValueError(msg)
 
 
 def get_or_create_object(obj):
@@ -389,7 +390,8 @@ def get_or_create_object(obj):
 
 def save_to_tempfile(data_str):
     """Save a selection to a temporary PDB file and return the file name."""
-    tf = tempfile.NamedTemporaryFile(suffix=".pdb", dir=".", delete=False)
+    # text mode (py3 compatibility)
+    tf = tempfile.NamedTemporaryFile("w", suffix=".pdb", dir=".", delete=False)
     tf.write(data_str)
     tf.close()
     return tf.name
@@ -400,14 +402,10 @@ def run_command(args, input_str=None):
     string, and return STDOUT as a string.
     """
     try:
-        if input_str is None:
-            process = subprocess.Popen(args, stdout=subprocess.PIPE)
-            output = process.communicate()[0]
-        else:
-            assert type(input_str) is str
-            process = subprocess.Popen(args, stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE)
-            output = process.communicate(input_str)[0]
+        process = subprocess.Popen(args, stdin=subprocess.PIPE,
+                universal_newlines=True, # text mode (py3 compatibility)
+                stdout=subprocess.PIPE)
+        output = process.communicate(input_str or "")[0]
     except OSError:
         msg = ("Unable to run the following command:\n\t`{}`\nPlease make "
                "sure {} is installed and can be found on the shell PATH.")
