@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 
 from pymol import cmd  #cgo, cmd, plugins
+from pymol import CmdException
 
 # import colors
 # from commands import command_line_output, save_to_tempfile
@@ -27,6 +28,16 @@ logger = logging.getLogger(__name__)
 # # Load saved settings from ~/.pymolpluginsrc if available
 # settings.load_settings()
 
+
+
+###############################################################################
+#
+# EXCEPTIONS
+#
+###############################################################################
+
+class MPException(CmdException):
+    pass
 
 
 ###############################################################################
@@ -215,7 +226,7 @@ class MPObject(object):
         self.disable_flipkin_group('all')
         self.enable_flipkin_group(grp)
 
-    def animate(self):
+    def animate(self, no_recurse=False):
         '''Toggle between 'reduce' and 'flip' flipkin kinemage groups.
 
         The 'flip' group is either 'flipNQ' or 'flipH', depending on which
@@ -237,9 +248,13 @@ class MPObject(object):
                 continue
 
         if not enabled_flipkins:
+            if no_recurse:
+                logger.debug('endless recursion, something went wrong')
+                return
+
             logger.debug('  no flipkin kinemages enabled...enabling flipkinNQ')
             self.solo_kin('flipkinNQ')
-            self.animate()
+            self.animate(True)
             return
 
         # Regex to match `mp_myobj.*.reduce` (flipkin 'reduce' group)
@@ -342,7 +357,7 @@ def get_object(obj):
         except KeyError:
             msg = "get_object: '{}' not in plugin objects dict.".format(obj)
             logger.error(msg)
-            raise
+            raise MPException(msg)
     elif type(obj) is MPObject:
         try:
             if obj.name not in objects.keys():
@@ -358,7 +373,7 @@ def get_object(obj):
         except AttributeError:
             msg = "get_object: '{}' not in plugin objects dict.".format(obj)
             logger.error(msg)
-            raise
+            raise MPException(msg)
     else:
         msg = "get_object: `obj` must be either a string or MPObject instance."
         raise ValueError(msg)
@@ -403,14 +418,14 @@ def run_command(args, input_str=None):
     """
     try:
         process = subprocess.Popen(args, stdin=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 universal_newlines=True, # text mode (py3 compatibility)
                 stdout=subprocess.PIPE)
-        output = process.communicate(input_str or "")[0]
+        output, stderr = process.communicate(input_str or "")
     except OSError:
         msg = ("Unable to run the following command:\n\t`{}`\nPlease make "
                "sure {} is installed and can be found on the shell PATH.")
-        logger.error(msg.format(" ".join(args), args[0]))
-        return None
+        raise MPException(msg.format(" ".join(args), args[0]))
 
     logger.debug("===== BEGIN OUTPUT =====\n%s", output)
     logger.debug("===== END OUTPUT =====")
@@ -419,6 +434,9 @@ def run_command(args, input_str=None):
     if process.returncode != 0:
         msg = '{} returned {}'.format(args[0], str(process.returncode))
         logger.warning(msg)
+
+    if stderr:
+        logger.warning(stderr)
 
     return output
 
@@ -737,14 +755,12 @@ def flipkin_object(obj):
     flipkinNQ_raw = generate_flipkin_output(tf)
     if not flipkinNQ_raw:
         msg = 'Failed to generate Flipkin NQ output for {}.'.format(obj)
-        logger.error(msg)
-        return
+        raise MPException(msg)
 
     flipkinH_raw = generate_flipkin_output(tf, his=True)
     if not flipkinH_raw:
         msg = 'Failed to generate Flipkin H output for {}.'.format(obj)
-        logger.error(msg)
-        return
+        raise MPException(msg)
 
     # Cleanup
     os.unlink(tf)
