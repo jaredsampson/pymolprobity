@@ -8,14 +8,27 @@ import sys
 
 if sys.version_info[0] < 3:
     import Tkinter as tk
+    import tkMessageBox
 else:
     import tkinter as tk
+    import tkinter.messagebox as tkMessageBox
 
 from pymol import cmd
 
 from . import main
 
 logger = logging.getLogger(__name__)
+
+
+def popup_on_exception(func):
+    '''Decorator for GUI error handling'''
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            tkMessageBox.showerror('Error', str(e))
+
+    return wrapper
 
 
 class PyMOLProbity:
@@ -59,9 +72,11 @@ class PyMOLProbity:
                 logger.debug(msg)
                 clear_child_widgets(flips_grp.interior())
 
+        @popup_on_exception
         def reduce_mpobj():
             main.reduce_object(mpobj.get())
 
+        @popup_on_exception
         def flipkin_mpobj():
             main.flipkin_object(mpobj.get())
             frame = flipkin_ctl.interior()
@@ -204,6 +219,7 @@ class PyMOLProbity:
             logger.debug('finished populating flip rows')
             nb.setnaturalsize()
 
+        @popup_on_exception
         def save_flip_selections():
             '''Save the user-selected flips to a new PDB object.'''
             o = main.get_object(mpobj.get())
@@ -240,6 +256,7 @@ class PyMOLProbity:
                     logger.debug(msg)
             o.solo_pdb('userflips')
 
+        @popup_on_exception
         def probe_mpobj():
             main.probe_object(mpobj.get())
             frame = probe_ctl.interior()
