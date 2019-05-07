@@ -36,39 +36,10 @@ this interests you.
 To use this PyMOL plugin, of course you will need to have PyMOL installed on
 your machine.  Incentive PyMOL users can download precompiled binaries; for
 those who don't have an Incentive PyMOL license, there is Open Source PyMOL.
-Detailed instructions are available via the [PyMOL Wiki][], but briefly, the
-easiest way to get Open Source PyMOL installed is probably to use a Package
-Manager.
+Detailed instructions are available via the [PyMOL Wiki][].
 
   [PyMOL Wiki]: http://www.pymolwiki.org/index.php/Category:Installation
 
-On Debian/Ubuntu, for example:
-
-```
-apt-get install pymol
-```
-
-On a Mac, [Homebrew][] is a good option.  Install [XQuartz][] if you don't have
-it already (this can be done without Homebrew, but Homebrew Cask simply
-automates the downloading and running of the installer:
-
-  [Homebrew]: http://www.brew.sh/
-  [XQuartz]: https://www.xquartz.org/
-
-```
-brew install Caskroom/cask/xquartz
-```
-
-and then PyMOL:
-
-```
-brew install homebrew/science/pymol
-```
-
-Homebrew's PyMOL formula requires Python to be installed `--with-tcl-tk` and
-Tcl/Tk to be installed `--with-threads --with-x11`, so if you've already
-installed either of those with Homebrew, you'll have to unlink and reinstall
-them.
 
 #### MolProbity programs
 
