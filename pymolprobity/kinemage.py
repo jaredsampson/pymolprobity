@@ -258,7 +258,8 @@ def process_subgroup(lines, context):
     line = lines[0]
     m = SUBGROUP_RE.match(line)
     if m:
-        return [m.group(1), m.group(2).replace('->', 'to'), m.group(3), m.group(4)]
+        g2 = m.group(2).replace('->', 'to').replace(' ', '_')
+        return [m.group(1), g2, m.group(3), m.group(4)]
 
 
 def process_kinemage(kinstr):
