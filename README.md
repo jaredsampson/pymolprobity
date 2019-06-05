@@ -126,13 +126,14 @@ Launch PyMOL, open the Plugin Manager from the menu (*Plugin* > *Plugin
 Manager*), and navigate to the *Install New Plugin* tab.  Paste the following
 URL into the *URL* box and click *Fetch*.
 
-    https://raw.githubusercontent.com/jaredsampson/pymolprobity/master/pymolprobity.tar.gz
+    https://github.com/jaredsampson/pymolprobity/archive/master.zip
 
 Confirm you wish to proceed with the download and the plugin will be installed
 automatically.  Alternatively, you can [download][] the zipped plugin archive
-file and select it using the file chooser.
+file (or a specific [version][], if desired) and select it using the file chooser.
 
-  [download]: https://raw.githubusercontent.com/jaredsampson/pymolprobity/master/pymolprobity.tar.gz
+  [download]: https://github.com/jaredsampson/pymolprobity/archive/master.zip
+  [version]: https://github.com/jaredsampson/pymolprobity/releases
 
 ### First run
 
@@ -162,7 +163,7 @@ A unit testing suite is included in the `tests` subdirectory.
 Running the tests requires the Python packages `nose`, `mock`, and optionally
 `coverage`.  If you have these installed already, you can skip this step; if
 not, run the following command to install the three packages and their
-dependencies using [`conda`]() if available, and [`pip`]() otherwise.
+dependencies using `conda` if available, and `pip` otherwise.
 
 ```
 make init
@@ -172,7 +173,13 @@ In the case of `conda`, the packages will be created in a new environment
 called `mp`, which you should then activate with:
 
 ```
-source activate mp
+conda activate mp
+```
+
+and deactivate when you are finished with:
+
+```
+conda deactivate
 ```
 
 `virtualenv` users can run `make init` from within an activated virtualenv to
@@ -245,7 +252,8 @@ repository](https://github.com/jaredsampson/pymolprobity/tags).
 
 ### Contributors
 
-* **Thomas Holder** - code for the "quad" dots visualization style.
+* **Thomas Holder** - "quad" dots visualization style and a number of other
+  improvements and bugfixes.
 
 ## License
 
@@ -257,9 +265,8 @@ for details
 The PyMOLProbity plugin was initially developed as part of my 2014-15 [Warren
 L. DeLano Memorial PyMOL Open Source Fellowship][posf].  I would like to thank
 [Schrodinger][] for sponsoring my POSF fellowship and opportunity to work on
-this software.  Specifically, I am grateful to the PyMOL developers, Thomas
-Holder, Blaine Bell, and Gabriel Marques, for their help, guidance, and
-patience.
+this software.  Specifically, I am grateful to the PyMOL developers for their
+help and patience.
 
   [Schrodinger]: http://www.schrodinger.com/
 
