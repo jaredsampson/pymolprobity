@@ -1,6 +1,6 @@
 # PyMOLProbity
 
-#### A MOLProbity visualization plugin for PyMOL
+#### A MolProbity-style visualization plugin for PyMOL
 
 The PyMOLProbity plugin allows a [PyMOL][] user to produce MolProbity-style
 visualization of atomic interactions within a structure (e.g.  H-bonds, van der
@@ -146,6 +146,7 @@ Save these using the *Save Selections* button.  Finally, use the *Visualize
 Contacts* tab to run Probe on the modified coordinates and generate contact
 dots and clash vectors for all the atoms in your object.
 
+
 ## Development
 
 Users who wish to inspect or tinker with the code or contribute to development
@@ -231,11 +232,13 @@ For a closer look at the plugin, to run tests yourself, or to help improve this
 plugin, please feel free to clone or fork this repository.  Bug reports and
 pull requests are definitely welcome!
 
+
 ## Versioning
 
 PyMOLProbity uses [semantic versioning](http://semver.org/). For the versions
 available, see the [tags on this
 repository](https://github.com/jaredsampson/pymolprobity/tags).
+
 
 ## Authors
 
@@ -254,6 +257,43 @@ repository](https://github.com/jaredsampson/pymolprobity/tags).
 
 * **Thomas Holder** - "quad" dots visualization style and a number of other
   improvements and bugfixes.
+
+
+## Citing PyMOLProbity
+
+Please cite the PyMOLProbity plugin with the following information:
+
+    Sampson, Jared M.  PyMOLProbity: a MolProbity-style visualization plugin for PyMOL, <version>. (<year>). <url>
+
+where:
+
+* `<version>` is the version number for the [release][releases] you used (e.g. v0.1.4);
+* `<year>` is the date that release version was made available; and
+* `<url>` is either:
+    * the address of this repository on GitHub (https://github.com/jaredsampson/pymolprobity); or
+    * the DOI associated with the release, available on the [releases][] page.
+
+  [releases]: https://github.com/jaredsampson/pymolprobity/releases
+
+For example, a BibTeX-formatted citation might look like this:
+
+```
+@software{pymolprobity,
+  author = {Sampson, Jared M.},
+  title = {PyMOLProbity: a MolProbity-style visualization plugin for PyMOL},
+  url = {https://github.com/jaredsampson/pymolprobity},
+  version = {0.1.4},
+  date = {2019-08-12},
+}
+
+```
+
+Remember also that PyMOLProbity uses the Reduce, Probe, Flipkin and Prekin
+programs from the Richardson group's MolProbity package, so please cite those
+as well.  Some relevant information may be found [here][mpabout].
+
+  [mpabout]: http://molprobity.biochem.duke.edu/help/about.html
+
 
 ## License
 
