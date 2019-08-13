@@ -271,9 +271,10 @@ where:
 * `<year>` is the date that release version was made available; and
 * `<url>` is either:
     * the address of this repository on GitHub (https://github.com/jaredsampson/pymolprobity); or
-    * the DOI associated with the release, available on the [releases][] page.
+    * the DOI associated with the release, available on the [releases][] page, or via this Zenodo [record][], which will always resolve to the latest release and display a list of available releases and DOIs.
 
   [releases]: https://github.com/jaredsampson/pymolprobity/releases
+  [record]: https://zenodo.org/record/3366407
 
 For example, a BibTeX-formatted citation might look like this:
 
