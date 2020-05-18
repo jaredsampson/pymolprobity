@@ -40,6 +40,8 @@ Detailed instructions are available via the [PyMOL Wiki][].
 
   [PyMOL Wiki]: http://www.pymolwiki.org/index.php/Category:Installation
 
+**Only PyMOL v2.0 or later is supported.**
+
 
 #### MolProbity programs
 
@@ -102,7 +104,8 @@ chmod +x flipkin prekin probe reduce
 ```
 
 You may also wish to download the Richardson group's "slightly modified version
-of the connectivity table published by the PDB" from the [Reduce software page][rp].  This file should be placed in `/usr/local`.  If you don't, you'll
+of the connectivity table published by the PDB" from the [Reduce software
+page][rp].  This file should be placed in `/usr/local`.  If you don't, you'll
 probably get the following error when you run Reduce:
 
   [rp]: http://kinemage.biochem.duke.edu/software/reduce.php
@@ -115,9 +118,11 @@ ERROR CTab(/usr/local/reduce_wwPDB_het_dict.txt): could not open
 ### Installation
 
 Installation of PyMOLProbity itself should be straightforward using PyMOL's
-[Plugin Manager][pm].  (Mac users note: Plugins are only available for MacPyMOL
-if you use the X11 hybrid [tweak][], which entails simply renaming or copying
-`MacPyMOL.app` to `PyMOLX11Hybrid.app` in your Applications folder.)
+[Plugin Manager][pm].  (Mac users note: Plugins are only available for 1.x
+versions of MacPyMOL if you use the X11 hybrid [tweak][], which entails simply
+renaming or copying `MacPyMOL.app` to `PyMOLX11Hybrid.app` in your Applications
+folder. For PyMOL version 2.0 and newer, plugins are built-in and you will not
+need to do this.)
 
   [pm]: http://www.pymolwiki.org/index.php/Plugin_Manager
   [tweak]: http://www.pymolwiki.org/index.php/Plugins#Plugins_on_OS_X
@@ -129,11 +134,41 @@ URL into the *URL* box and click *Fetch*.
     https://github.com/jaredsampson/pymolprobity/archive/master.zip
 
 Confirm you wish to proceed with the download and the plugin will be installed
-automatically.  Alternatively, you can [download][] the zipped plugin archive
-file (or a specific [version][], if desired) and select it using the file chooser.
+automatically.  Alternatively, or if the URL method fails, you can [download][]
+the zipped plugin archive file (or a specific [version][], if desired) and
+select it using the file chooser.
 
   [download]: https://github.com/jaredsampson/pymolprobity/archive/master.zip
   [version]: https://github.com/jaredsampson/pymolprobity/releases
+
+*Note:* If you are using PyMOL version earlier than 2.3.3, the URL-based option
+above will fail due to the presence of thpe `tests` directory, so you will need
+to download the `master.zip` file from the link above, unzip it, delete the
+`tests` directory, and re-zip the file.  This can all be done via the following
+`bash` commands:
+
+```
+curl -o pymolprobity-master.zip -O https://github.com/jaredsampson/pymolprobity/archive/master.zip \
+    && unzip pymolprobity-master.zip \
+    && rm -r pymolprobity-master/tests \
+    && rm pymolprobity-master.zip \
+    && zip -r pymolprobity-master.zip pymolprobity-master
+```
+
+One final step is required if you are using an incentive build and launching
+from an app icon rather than from the terminal.  You will need to ensure that
+the path to the Reduce/Probe executables is included in the shell PATH within
+the PyMOL app environment.  This can be done by editing your `pymolrc` file via
+*File* > *Edit pymolrc* and adding the following lines, changing the path to
+point to the actual location of your MolProbity programs if you have not used
+`/usr/local/bin`.
+
+```
+# for PyMOLProbity plugin, path to reduce/probe/flipkin/prekin executables
+import os
+os.environ['PATH'] += os.pathsep + '/usr/local/bin'
+```
+
 
 ### First run
 
