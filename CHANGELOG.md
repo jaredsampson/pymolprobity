@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v0.1.5
+
 ### Added
 - Config file for use with `bumpversion` utility.
 

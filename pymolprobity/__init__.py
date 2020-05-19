@@ -38,7 +38,7 @@ REQUIREMENTS
 from __future__ import absolute_import
 
 __author__ = 'Jared Sampson'
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 
 
 import logging
