@@ -104,11 +104,10 @@ chmod +x flipkin prekin probe reduce
 ```
 
 You may also wish to download the Richardson group's "slightly modified version
-of the connectivity table published by the PDB" from the [Reduce software
-page][rp].  This file should be placed in `/usr/local`.  If you don't, you'll
+of the connectivity table published by the PDB" from the [Reduce GitHub repo][rp], `reduce_wwPDB_het_dict.txt`.  This file should be placed in `/usr/local`.  If you don't, you'll
 probably get the following error when you run Reduce:
 
-  [rp]: http://kinemage.biochem.duke.edu/software/reduce.php
+  [rp]: https://github.com/rlabduke/reduce/raw/master/reduce_wwPDB_het_dict.txt
 
 ```
 ERROR CTab(/usr/local/reduce_wwPDB_het_dict.txt): could not open
